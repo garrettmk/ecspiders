@@ -34,17 +34,14 @@ class TigerChefSpider(CrawlSpider):
     def parse_category(self, response):
         """Return requests for product info pages, then a request for the next button."""
         for link in self.product_links.extract_links(response):
-            yield Request(url=link.url, callback='parse_product')
+            yield Request(url=link.url, callback=self.parse_product)
 
         rel_link = response.css('div.pagination a[rel="next"]::attr(href)').extract_first()
         if rel_link:
-            yield response.urljoin(rel_link)
+            yield Request(url=response.urljoin(rel_link), callback=self.parse_category)
 
     def parse_product(self, response):
-        info = response.css('div#product-info')
-        if not info:
-            return self.parse(response)
-
+        """Extract product data from a product info page."""
         loader = TigerChefProductLoader(item=ProductItem(), response=response)
 
         loader.nested_css('div#product-info')
